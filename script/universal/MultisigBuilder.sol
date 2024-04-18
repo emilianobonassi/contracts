@@ -51,9 +51,17 @@ abstract contract MultisigBuilder is MultisigBase {
      */
     function sign() public {
         address safe = _ownerSafe();
+
+        // snapshot and restore nonce after simulation
+        // otw data to sign would be not matching the actual tx
+        uint256 prevNonce = IGnosisSafe(safe).nonce();
+
         IMulticall3.Call3[] memory calls = _buildCalls();
         (Vm.AccountAccess[] memory accesses, SimulationPayload memory simPayload) = _simulateForSigner(safe, calls);
         _postCheck(accesses, simPayload);
+
+        vm.store(safe, bytes32(uint256(5)), bytes32(uint256(prevNonce)));
+
         _printDataToSign(safe, calls);
     }
 
